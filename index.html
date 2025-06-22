@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <title>Garlic Growth Visualization</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- ✅ Chart.js 추가 -->
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -91,12 +90,8 @@
         </div>
 
 
-        <!-- 🔄 시각화와 그래프를 같은 선상에 놓는 flex 박스 -->
         <div style="display: flex; gap: 30px; align-items: flex-start;">
-            <!-- 왼쪽 시각화 -->
             <div id="canvas-container" style="width: 600px; height: 800px;"></div>
-
-            <!-- 오른쪽 그래프 박스 -->
             <div style="display: flex; flex-direction: column; justify-content: space-between; height: 800px; width: 300px;">
                 <div style="height: 180px; background-color: #f0f0f0; border: 1px solid #ccc;"><canvas id="lai" style="width: 100%; height: 100%;"></canvas></div>
                 <div style="height: 180px; background-color: #f0f0f0; border: 1px solid #ccc;"><canvas id="leafLength" style="width: 100%; height: 100%;"></canvas></div>

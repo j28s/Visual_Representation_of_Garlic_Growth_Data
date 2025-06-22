@@ -6,9 +6,6 @@ let playing = true;
 let baseY;
 let maxLai = 0;
 let reachedMaxLai = false;
-// let sliderMode = false;
-
-
 let startInput, endInput, speedSelect, yearSelect, playPauseButton, resetButton;
 let startDay = 0, endDay = 0;
 let timelineSlider, currentDateLabel;
@@ -22,26 +19,21 @@ function preload() {
     phaseDataRaw = loadJSON("development_phase.json");
 }
 
-// 날짜 키 유효성 검사 및 정리
 function cleanDateKeys(data, label = "데이터") {
     const cleaned = {};
     const dateRegex = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
     for (let key in data) {
         if (dateRegex.test(key)) {
             cleaned[key] = data[key];
-        } else {
-            // console.warn(`⚠️ 잘못된 키 제거 (${label}):`, key);
         }
     }
     return cleaned;
 }
 
-// garlicData 기준 날짜만 남기기
 function syncDateKeysToGarlicFormat(rawData, referenceDates, label = "데이터") {
     const synced = {};
     for (let key in rawData) {
         if (!referenceDates.includes(key)) {
-            // console.warn(`⚠️ garlicData에 없는 날짜 (${label}):`, key);
             continue;
         }
         synced[key] = rawData[key];
@@ -50,7 +42,7 @@ function syncDateKeysToGarlicFormat(rawData, referenceDates, label = "데이터"
 }
 
 function setup() {
-    setupGraphs(); // 그래프 초기화 함수 실행
+    setupGraphs();
 
     let canvas = createCanvas(600, 800);
     canvas.parent("canvas-container");
@@ -88,8 +80,6 @@ function setup() {
     timelineSlider.attribute('max', keys.length - 1);
     timelineSlider.input(() => {
         dayIndex = int(timelineSlider.value());
-
-        // // 그래프 초기화
         function clearChart(chart) {
             chart.data.labels = [];
             chart.data.datasets.forEach(ds => ds.data = []);
@@ -99,51 +89,11 @@ function setup() {
         clearChart(bulbChart);
         clearChart(rootChart);
         clearChart(leafChart);
-        //
-        // // 슬라이더 범위까지 채우기
-        // for (let i = 0; i <= dayIndex; i++) {
-        //     const date = keys[i];
-        //     const g = garlicData[date];
-        //     const leaves = lengthByDate[date];
-        //
-        //     laiChart.data.labels.push(date);
-        //     laiChart.data.datasets[0].data.push({x: date, y: g.LAI});
-        //
-        //     bulbChart.data.labels.push(date);
-        //     bulbChart.data.datasets[0].data.push({
-        //         x: date,
-        //         y: parseFloat(g.bulb_mass) || 0
-        //     });
-        //
-        //     rootChart.data.labels.push(date);
-        //     rootChart.data.datasets[0].data.push({
-        //         x: date,
-        //         y: parseFloat(g.root_mass) || 0
-        //     });
-        //
-        //     leafChart.data.labels.push(date);
-        //     if (Array.isArray(leaves)) {
-        //         for (let j = 0; j < 10; j++) {
-        //             leafChart.data.datasets[j].data.push(leaves[j] || 0);
-        //         }
-        //     }
-        //
-        // }
-
-        // laiChart.update();
-        // bulbChart.update();
-        // rootChart.update();
-        // leafChart.update();
 
         timelineSlider.value(dayIndex);
-
-        // ✅ 슬라이더 이동 후 자동 재생되도록
         if (playing) loop();
-        // dayIndex++;  // ⭐ 핵심!
     });
 
-
-    // 나머지 UI 요소
     startInput = select('#startDate');
     endInput = select('#endDate');
     playPauseButton = select('#playPauseBtn');
@@ -252,11 +202,9 @@ function updateRange() {
 function togglePlay() {
 
     if (dayIndex > endDay) {
-        // ✅ 이미 끝까지 갔다면 완전 초기화
-        resetAll();  // ← 초기화 함수 호출
+        resetAll();
     }
     playing = !playing;
-    // sliderMode = false; // 자동 재생 모드로 전환
     if (playing) {
         loop();
         playPauseButton.html("⏸ Pause");
@@ -275,8 +223,6 @@ function resetAll() {
 
     startInput.value(garlicData[keys[0]].date);
     endInput.value(garlicData[keys[keys.length - 1]].date);
-
-    // ✅ 그래프 데이터 완전 초기화
     function clearChart(chart) {
         chart.data.labels = [];
         chart.data.datasets.forEach(dataset => {
@@ -293,13 +239,6 @@ function resetAll() {
 
 
 function draw() {
-    // draw() 시작 부분에 이 조건을 추가
-    // const currentLabel = garlicData[keys[dayIndex]].date.split("T")[0];
-    // if (laiChart.data.labels.includes(currentLabel)) {
-    //     dayIndex++;
-    //     return;
-    // }
-
     const data = garlicData[keys[dayIndex]];
     const lai = Number(data["LAI"]) || 0;
     const bulb = parseFloat(data["bulb_mass"]) || 0;
@@ -308,9 +247,7 @@ function draw() {
     const rawDate = data["date"] || "Unknown";
     const date = rawDate.split("T")[0];
 
-// if (dayIndex < laiChart.data.labels.length) return;  // 이미 있음 → 그리지 않음
-
-    // 생육 단계 색상
+    // 생육단계 부분
     let stage = phaseData[date] || "Unknown";
     if (stage === "seed") background(250, 245, 230);
     else if (stage === "vegetative") background(220, 250, 220);
@@ -337,7 +274,6 @@ function draw() {
         const laiHeight = map(lai, 0, 6, 0, 250);
         const laiOpacity = map(lai, 0, 6, 80, 50);
 
-        // 🌱 점진적 노화 표현 (그라데이션)
         let green = color(50, 180, 60);
         let yellow = color(255, 230, 0);
         let fadeRatio = constrain((maxLai - lai) / maxLai, 0, 1);  // 0~1 사이 비율
@@ -380,11 +316,9 @@ function draw() {
             let endX = baseX + cos(angle) * len * dir;
             let endY = baseY - sin(angle) * len;
 
-            // ✅ 마우스 거리 계산 후 isHovered 설정
             let d = dist(mouseX, mouseY, endX, endY);
             let isHovered = d < 30;
 
-            // ✅ 색상 조건 적용
             let leafFill = isHovered ? color(0, 120, 0) : color(0, 160, 0);
             leafFill.setAlpha(isHovered ? 255 : 200);
 
@@ -405,33 +339,21 @@ function draw() {
                 text(`No.${i + 1}\n${rawLen.toFixed(1)}cm`, endX, endY - 5);
             }
         }
-
-
     }
-
-
-    // if (visibleLeaves === 0) {
-    //     fill(150);
-    //     textAlign(CENTER);
-    //     text("🌱 아직 잎이 없습니다", width / 2, height - 30);
-    // }
 
     if (bulb > 0) {
         noStroke();
         fill(160, 100, 200);
         ellipse(width / 2, bulbCenterY, bulbSize);
 
-        // ✅ 구 무게 텍스트
-        let labelSize = map(bulb, 0, 5, 8, 16); // 💡 5g일 때까지 점진적으로 키움
-        labelSize = constrain(labelSize, 4, 13); // 너무 작아지지 않도록 최소 6
-
+        let labelSize = map(bulb, 0, 5, 8, 16);
+        labelSize = constrain(labelSize, 4, 13);
 
         fill(255);
         textSize(labelSize);
         textAlign(CENTER, CENTER);
         text(`${bulb.toFixed(1)} g`, width / 2, bulbCenterY);
     }
-
 
     if (rootMass > 0) {
         const rootCount = 15;
@@ -444,7 +366,6 @@ function draw() {
         strokeWeight(2);
         noFill();
 
-        // 🌀 중심부터 퍼져나가는 순서 만들기
         let drawOrder = [];
         let mid = floor(rootCount / 2);
         for (let i = 0; i < rootCount; i++) {
@@ -458,22 +379,17 @@ function draw() {
         for (let i = 0; i < rootCount; i++) {
             const index = drawOrder[i];
 
-            // 각 뿌리의 등장 시점 계산
             const rootThreshold = rootStartThreshold + (i / rootCount) * rootGrowthSpan;
 
-            // 아직 등장 시점이 안 된 뿌리는 skip
             if (rootMass < rootThreshold) continue;
 
-            // 등장 후 성장 진행률 계산
             let progress = map(rootMass, rootThreshold, rootThreshold + 0.75, 0, 1);
             progress = constrain(progress, 0, 1);
             progress = pow(progress, 0.7);  // 곡선형 성장
 
-            // 길이 다양성 부여
             const noiseFactor = 0.9 + 0.2 * sin(index);
             const rootLen = maxRootLen * progress * noiseFactor;
 
-            // 위치 계산
             const offsetIndex = index - floor(rootCount / 2);
             const offset = offsetIndex * spacing;
             const ctrlX = centerX + offset * 0.5;
@@ -520,28 +436,17 @@ function draw() {
     rootChart.data.labels.push(date);
     leafChart.data.labels.push(date);
 
-    // LAI
     laiChart.data.datasets[0].data.push(lai);
-
-    // Bulb
     bulbChart.data.datasets[0].data.push(bulb);
-
-    // Root
     rootChart.data.datasets[0].data.push(rootMass);
-
-    // Leaf 길이들
     if (lengthByDate[date]) {
         const leaves = lengthByDate[date];
         for (let i = 0; i < leafChart.data.datasets.length; i++) {
             leafChart.data.datasets[i].data.push(leaves[i] || 0);
         }
     }
-
-// 그래프 업데이트
     laiChart.update();
     bulbChart.update();
     leafChart.update();
     rootChart.update();
-
-
 }
