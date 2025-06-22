@@ -1,94 +1,128 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>Garlic Growth Visualization</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fafafa;
-      padding: 20px;
-    }
+    <meta charset="UTF-8">
+    <title>Garlic Growth Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- ✅ Chart.js 추가 -->
 
-    canvas {
-      border: 1px solid #ccc;
-      display: block;
-      margin-bottom: 10px;
-    }
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #fafafa;
+            padding: 20px;
+        }
 
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-    }
+        main {
+            display: flex;
+            gap: 40px;
+        }
 
-    .slider-container {
-      width: 600px;
-      margin-top: 10px;
-      margin-bottom: 20px;
-    }
+        canvas {
+            border: 1px solid #ccc;
+            display: block;
+            margin-bottom: 10px;
+        }
 
-    #timelineSlider {
-      width: 100%;
-    }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
 
-    label {
-      font-weight: bold;
-    }
+        .slider-container {
+            width: 600px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
 
-    .info-bar {
-      margin-bottom: 10px;
-      font-size: 16px;
-    }
+        #timelineSlider {
+            width: 100%;
+        }
 
-    .info-bar span {
-      font-weight: bold;
-      color: #555;
-    }
-  </style>
+        label {
+            font-weight: bold;
+        }
+
+        .info-bar {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .info-bar span {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .chart-container {
+            width: 500px;
+        }
+
+        .chart-container canvas {
+            background: white;
+        }
+    </style>
 </head>
 <body>
+<div class="info-bar">
+    📅 시뮬레이션 기간: <span>2014년 9월 1일 ~ 2015년 7월 6일</span>
+</div>
+
 <main>
-  <div class="info-bar">
-    📅 시뮬레이션 기간: <span>2014년 9월 1일 ~ 2015년 6월 30일</span>
-  </div>
+    <div>
+        <div id="ui" class="controls">
+            <button id="resetBtn">🔄 초기화</button>
+            <button id="playPauseBtn">⏸ Pause</button>
 
-  <div id="ui" class="controls">
-    <button id="resetBtn">🔄 초기화</button>
-    <button id="playPauseBtn">⏸ Pause</button>
+            <label for="speedSelect">속도:</label>
+            <select id="speedSelect">
+                <option value="2.5">0.5x</option>
+                <option value="5" selected>1x</option>
+                <option value="10">2x</option>
+                <option value="15">3x</option>
+            </select>
+        </div>
 
-    <label for="speedSelect">속도:</label>
-    <select id="speedSelect">
-      <option value="2.5">0.5x</option>
-      <option value="5" selected>1x</option>
-      <option value="10">2x</option>
-      <option value="15">3x</option>
-    </select>
-  </div>
+        <div class="slider-container">
+            <input type="range" id="timelineSlider" min="0" value="0">
+            <div id="monthTicks"
+                 style="display: flex; justify-content: space-between; font-size: 12px; color: #888;"></div>
+        </div>
 
-  <div class="slider-container">
-    <input type="range" id="timelineSlider" min="0" value="0">
-  </div>
+
+        <!-- 🔄 시각화와 그래프를 같은 선상에 놓는 flex 박스 -->
+        <div style="display: flex; gap: 30px; align-items: flex-start;">
+            <!-- 왼쪽 시각화 -->
+            <div id="canvas-container" style="width: 600px; height: 800px;"></div>
+
+            <!-- 오른쪽 그래프 박스 -->
+            <div style="display: flex; flex-direction: column; justify-content: space-between; height: 800px; width: 300px;">
+                <div style="height: 180px; background-color: #f0f0f0; border: 1px solid #ccc;"><canvas id="lai" style="width: 100%; height: 100%;"></canvas></div>
+                <div style="height: 180px; background-color: #f0f0f0; border: 1px solid #ccc;"><canvas id="leafLength" style="width: 100%; height: 100%;"></canvas></div>
+                <div style="height: 180px; background-color: #f0f0f0; border: 1px solid #ccc;"><canvas id="bulb" style="width: 100%; height: 100%;"></canvas></div>
+                <div style="height: 180px; background-color: #f0f0f0; border: 1px solid #ccc;"><canvas id="root" style="width: 100%; height: 100%;"></canvas></div>
+            </div>
+        </div>
+    </div>
 </main>
 
 <script>
-  const fixedStart = "2014-09-01";
-  const fixedEnd = "2015-06-30";
-  window.onload = () => {
-    const startInput = document.createElement("input");
-    startInput.type = "hidden";
-    startInput.id = "startDate";
-    startInput.value = fixedStart;
-    document.body.appendChild(startInput);
+    const fixedStart = "2014-09-01";
+    const fixedEnd = "2015-06-30";
+    window.onload = () => {
+        const startInput = document.createElement("input");
+        startInput.type = "hidden";
+        startInput.id = "startDate";
+        startInput.value = fixedStart;
+        document.body.appendChild(startInput);
 
-    const endInput = document.createElement("input");
-    endInput.type = "hidden";
-    endInput.id = "endDate";
-    endInput.value = fixedEnd;
-    document.body.appendChild(endInput);
-  };
+        const endInput = document.createElement("input");
+        endInput.type = "hidden";
+        endInput.id = "endDate";
+        endInput.value = fixedEnd;
+        document.body.appendChild(endInput);
+    };
 </script>
 
 <script src="sketch.js"></script>

@@ -6,12 +6,13 @@ let playing = true;
 let baseY;
 let maxLai = 0;
 let reachedMaxLai = false;
+// let sliderMode = false;
 
 
 let startInput, endInput, speedSelect, yearSelect, playPauseButton, resetButton;
 let startDay = 0, endDay = 0;
 let timelineSlider, currentDateLabel;
-
+let chart;
 
 function preload() {
     garlicData = loadJSON("garlic_output.json");
@@ -49,7 +50,10 @@ function syncDateKeysToGarlicFormat(rawData, referenceDates, label = "데이터"
 }
 
 function setup() {
-    createCanvas(600, 800);
+    setupGraphs(); // 그래프 초기화 함수 실행
+
+    let canvas = createCanvas(600, 800);
+    canvas.parent("canvas-container");
     baseY = height * 0.5;
     frameRate(10);
 
@@ -84,8 +88,59 @@ function setup() {
     timelineSlider.attribute('max', keys.length - 1);
     timelineSlider.input(() => {
         dayIndex = int(timelineSlider.value());
-    });
 
+        // // 그래프 초기화
+        function clearChart(chart) {
+            chart.data.labels = [];
+            chart.data.datasets.forEach(ds => ds.data = []);
+        }
+
+        clearChart(laiChart);
+        clearChart(bulbChart);
+        clearChart(rootChart);
+        clearChart(leafChart);
+        //
+        // // 슬라이더 범위까지 채우기
+        // for (let i = 0; i <= dayIndex; i++) {
+        //     const date = keys[i];
+        //     const g = garlicData[date];
+        //     const leaves = lengthByDate[date];
+        //
+        //     laiChart.data.labels.push(date);
+        //     laiChart.data.datasets[0].data.push({x: date, y: g.LAI});
+        //
+        //     bulbChart.data.labels.push(date);
+        //     bulbChart.data.datasets[0].data.push({
+        //         x: date,
+        //         y: parseFloat(g.bulb_mass) || 0
+        //     });
+        //
+        //     rootChart.data.labels.push(date);
+        //     rootChart.data.datasets[0].data.push({
+        //         x: date,
+        //         y: parseFloat(g.root_mass) || 0
+        //     });
+        //
+        //     leafChart.data.labels.push(date);
+        //     if (Array.isArray(leaves)) {
+        //         for (let j = 0; j < 10; j++) {
+        //             leafChart.data.datasets[j].data.push(leaves[j] || 0);
+        //         }
+        //     }
+        //
+        // }
+
+        // laiChart.update();
+        // bulbChart.update();
+        // rootChart.update();
+        // leafChart.update();
+
+        timelineSlider.value(dayIndex);
+
+        // ✅ 슬라이더 이동 후 자동 재생되도록
+        if (playing) loop();
+        // dayIndex++;  // ⭐ 핵심!
+    });
 
 
     // 나머지 UI 요소
@@ -105,6 +160,85 @@ function setup() {
 }
 
 
+let laiChart, bulbChart, leafChart, rootChart;
+
+function setupGraphs() {
+    const laiCtx = document.getElementById("lai").getContext("2d");
+    laiChart = new Chart(laiCtx, {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [{
+                label: "LAI",
+                data: [],
+                borderColor: "green",
+                backgroundColor: "rgba(0,200,0,0.2)",
+                fill: true
+            }]
+        },
+        options: {
+            animation: false,
+            responsive: true,
+            scales: {x: {display: false}, y: {beginAtZero: true}}
+        }
+    });
+
+    const bulbCtx = document.getElementById("bulb").getContext("2d");
+    bulbChart = new Chart(bulbCtx, {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [{
+                label: "Bulb Mass (g)",
+                data: [],
+                borderColor: "purple",
+                fill: false
+            }]
+        },
+        options: {
+            animation: false,
+            scales: {x: {display: false}, y: {beginAtZero: true}}
+        }
+    });
+
+    const leafCtx = document.getElementById("leafLength").getContext("2d");
+    leafChart = new Chart(leafCtx, {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: Array.from({length: 10}, (_, i) => ({
+                label: `Leaf ${i + 1}`,
+                data: [],
+                borderColor: `hsl(${i * 36}, 100%, 50%)`,
+                fill: false
+            }))
+        },
+        options: {
+            animation: false,
+            scales: {x: {display: false}, y: {beginAtZero: true}}
+        }
+    });
+
+    const rootCtx = document.getElementById("root").getContext("2d");
+    rootChart = new Chart(rootCtx, {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [{
+                label: "Root Mass (g)",
+                data: [],
+                borderColor: "brown",
+                fill: false
+            }]
+        },
+        options: {
+            animation: false,
+            scales: {x: {display: false}, y: {beginAtZero: true}}
+        }
+    });
+}
+
+
 function updateRange() {
     const sDate = startInput.value();
     const eDate = endInput.value();
@@ -116,7 +250,13 @@ function updateRange() {
 }
 
 function togglePlay() {
+
+    if (dayIndex > endDay) {
+        // ✅ 이미 끝까지 갔다면 완전 초기화
+        resetAll();  // ← 초기화 함수 호출
+    }
     playing = !playing;
+    // sliderMode = false; // 자동 재생 모드로 전환
     if (playing) {
         loop();
         playPauseButton.html("⏸ Pause");
@@ -132,11 +272,34 @@ function resetAll() {
     dayIndex = 0;
     maxLai = 0;
     reachedMaxLai = false;
+
     startInput.value(garlicData[keys[0]].date);
     endInput.value(garlicData[keys[keys.length - 1]].date);
+
+    // ✅ 그래프 데이터 완전 초기화
+    function clearChart(chart) {
+        chart.data.labels = [];
+        chart.data.datasets.forEach(dataset => {
+            dataset.data = [];
+        });
+        chart.update();
+    }
+
+    clearChart(laiChart);
+    clearChart(bulbChart);
+    clearChart(rootChart);
+    clearChart(leafChart);
 }
 
+
 function draw() {
+    // draw() 시작 부분에 이 조건을 추가
+    // const currentLabel = garlicData[keys[dayIndex]].date.split("T")[0];
+    // if (laiChart.data.labels.includes(currentLabel)) {
+    //     dayIndex++;
+    //     return;
+    // }
+
     const data = garlicData[keys[dayIndex]];
     const lai = Number(data["LAI"]) || 0;
     const bulb = parseFloat(data["bulb_mass"]) || 0;
@@ -144,6 +307,8 @@ function draw() {
     const rootCarbon = parseFloat(data["root_carbon"]) || 0;
     const rawDate = data["date"] || "Unknown";
     const date = rawDate.split("T")[0];
+
+// if (dayIndex < laiChart.data.labels.length) return;  // 이미 있음 → 그리지 않음
 
     // 생육 단계 색상
     let stage = phaseData[date] || "Unknown";
@@ -344,8 +509,39 @@ function draw() {
 
     dayIndex++;
     if (dayIndex > endDay) {
-        dayIndex = startDay;
-        maxLai = 0;
-        reachedMaxLai = false;
+        noLoop();
+        playing = false;
+        playPauseButton.html("▶ Play");  // 버튼도 멈춘 상태로 표시
     }
+
+    // 날짜 업데이트
+    laiChart.data.labels.push(date);
+    bulbChart.data.labels.push(date);
+    rootChart.data.labels.push(date);
+    leafChart.data.labels.push(date);
+
+    // LAI
+    laiChart.data.datasets[0].data.push(lai);
+
+    // Bulb
+    bulbChart.data.datasets[0].data.push(bulb);
+
+    // Root
+    rootChart.data.datasets[0].data.push(rootMass);
+
+    // Leaf 길이들
+    if (lengthByDate[date]) {
+        const leaves = lengthByDate[date];
+        for (let i = 0; i < leafChart.data.datasets.length; i++) {
+            leafChart.data.datasets[i].data.push(leaves[i] || 0);
+        }
+    }
+
+// 그래프 업데이트
+    laiChart.update();
+    bulbChart.update();
+    leafChart.update();
+    rootChart.update();
+
+
 }
