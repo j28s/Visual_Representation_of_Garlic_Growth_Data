@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Garlic Growth Visualization</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fafafa;
+      padding: 20px;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .slider-container {
+      width: 600px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+
+    #timelineSlider {
+      width: 100%;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    .info-bar {
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .info-bar span {
+      font-weight: bold;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+<main>
+  <div class="info-bar">
+    📅 시뮬레이션 기간: <span>2014년 9월 1일 ~ 2015년 6월 30일</span>
+  </div>
+
+  <div id="ui" class="controls">
+    <button id="resetBtn">🔄 초기화</button>
+    <button id="playPauseBtn">⏸ Pause</button>
+
+    <label for="speedSelect">속도:</label>
+    <select id="speedSelect">
+      <option value="2.5">0.5x</option>
+      <option value="5" selected>1x</option>
+      <option value="10">2x</option>
+      <option value="15">3x</option>
+    </select>
+  </div>
+
+  <div class="slider-container">
+    <input type="range" id="timelineSlider" min="0" value="0">
+  </div>
+</main>
+
+<script>
+  const fixedStart = "2014-09-01";
+  const fixedEnd = "2015-06-30";
+  window.onload = () => {
+    const startInput = document.createElement("input");
+    startInput.type = "hidden";
+    startInput.id = "startDate";
+    startInput.value = fixedStart;
+    document.body.appendChild(startInput);
+
+    const endInput = document.createElement("input");
+    endInput.type = "hidden";
+    endInput.id = "endDate";
+    endInput.value = fixedEnd;
+    document.body.appendChild(endInput);
+  };
+</script>
+
+<script src="sketch.js"></script>
+</body>
+</html>
